@@ -1,0 +1,86 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { RECIPE_CATEGORIES, slugifyTag } from '../data/taxonomy';
+
+const recipes = await getCollection('recipes');
+const collator = new Intl.Collator('es', { sensitivity: 'base' });
+const sorted = [...recipes].sort((a, b) => collator.compare(a.data.title, b.data.title));
+const groups = new Map<string, typeof sorted>();
+for (const recipe of sorted) {
+  const letter = recipe.data.title.trim().charAt(0).toLocaleUpperCase('es');
+  groups.set(letter, [...(groups.get(letter) ?? []), recipe]);
+}
+const letters = [...groups.keys()].sort(collator.compare);
+const categories = RECIPE_CATEGORIES;
+const tags = [...new Set(recipes.flatMap((recipe) => recipe.data.tags))].sort(collator.compare);
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+---
+
+<BaseLayout title="Índice de recetas" description="Índice alfabético de las recetas de muestra, ordenado en español.">
+  <section class="page-intro">
+    <p class="eyebrow">EL RECETARIO</p>
+    <h1 id="index-heading"><span id="index-default-title">Índice de <em>recetas.</em></span><span id="index-category-title" hidden></span></h1>
+    <p id="index-default-description">Un índice automático, ordenado con las reglas del español. Las letras sin recetas no aparecen.</p>
+    <p class="index-category-context" id="index-category-context" hidden>Recetas de esta categoría. <a href={`${base}/indice/`}>Ver todas las recetas</a></p>
+    <div class="letter-nav" aria-label="Letras con recetas">{letters.map((letter) => <a href={`#letra-${letter}`}>{letter}</a>)}</div>
+    <div class="recipe-tools index-tools">
+      <label class="category-field"><span class="sr-only">Filtrar el índice por categoría</span><select id="index-category-filter"><option value="">Todas las categorías</option>{categories.map((category) => <option value={category}>{category}</option>)}</select></label>
+      <span class="result-count" id="index-result-count" aria-live="polite">{recipes.length} recetas de muestra</span>
+    </div>
+  </section>
+  <div class="alphabet-list">
+    {letters.map((letter) => <section class="letter-group" id={`letra-${letter}`} data-letter-group aria-labelledby={`heading-${letter}`}>
+      <h2 id={`heading-${letter}`}>{letter}</h2>
+      <ul>{groups.get(letter)?.map((recipe) => <li data-index-recipe data-categories={recipe.data.categories.join('|')}><a href={`${base}/recetas/${recipe.id}/`}>{recipe.data.title}</a>{recipe.data.author && <span> · {recipe.data.author}</span>}</li>)}</ul>
+    </section>)}
+    <p class="empty-state" id="index-empty-state" hidden>No hay recetas en esta categoría.</p>
+  </div>
+  <section class="tag-index" aria-labelledby="tag-index-heading">
+    <p class="eyebrow">AGRUPACIONES TEMÁTICAS</p>
+    <h2 id="tag-index-heading">Explorar por etiquetas</h2>
+    <ul class="tag-index-list">{tags.map((tag) => <li><a href={`${base}/etiquetas/${slugifyTag(tag)}/`}>{tag}</a></li>)}</ul>
+  </section>
+</BaseLayout>
+
+<script>
+  const categoryFilter = document.querySelector<HTMLSelectElement>('#index-category-filter');
+  const recipes = [...document.querySelectorAll<HTMLElement>('[data-index-recipe]')];
+  const groups = [...document.querySelectorAll<HTMLElement>('[data-letter-group]')];
+  const count = document.querySelector<HTMLElement>('#index-result-count');
+  const empty = document.querySelector<HTMLElement>('#index-empty-state');
+  const defaultTitle = document.querySelector<HTMLElement>('#index-default-title');
+  const categoryTitle = document.querySelector<HTMLElement>('#index-category-title');
+  const defaultDescription = document.querySelector<HTMLElement>('#index-default-description');
+  const categoryContext = document.querySelector<HTMLElement>('#index-category-context');
+  const requestedCategory = new URLSearchParams(window.location.search).get('categoria');
+  const validCategory = [...(categoryFilter?.options ?? [])].some((option) => option.value === requestedCategory);
+  if (categoryFilter && requestedCategory && validCategory) categoryFilter.value = requestedCategory;
+
+  function filterIndex() {
+    const selected = categoryFilter?.value ?? '';
+    let visible = 0;
+    for (const recipe of recipes) {
+      const matches = !selected || (recipe.dataset.categories ?? '').split('|').includes(selected);
+      recipe.hidden = !matches;
+      if (matches) visible++;
+    }
+    for (const group of groups) group.hidden = !group.querySelector('[data-index-recipe]:not([hidden])');
+    if (count) count.textContent = `${visible} ${visible === 1 ? 'receta' : 'recetas'} de muestra`;
+    if (empty) empty.hidden = visible > 0;
+    if (defaultTitle) defaultTitle.hidden = Boolean(selected);
+    if (categoryTitle) {
+      categoryTitle.hidden = !selected;
+      categoryTitle.textContent = selected;
+    }
+    if (defaultDescription) defaultDescription.hidden = Boolean(selected);
+    if (categoryContext) categoryContext.hidden = !selected;
+    const url = new URL(window.location.href);
+    if (selected) url.searchParams.set('categoria', selected);
+    else url.searchParams.delete('categoria');
+    window.history.replaceState(null, '', `${url.pathname}${url.search}${url.hash}`);
+  }
+
+  categoryFilter?.addEventListener('change', filterIndex);
+  filterIndex();
+</script>

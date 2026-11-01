@@ -1,0 +1,30 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import RecipeCollection from '../components/RecipeCollection.astro';
+
+const recipes = await getCollection('recipes');
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+const heroImage = `${base}/images/portada/${encodeURIComponent('Imagen abuela portada.jpeg')}`;
+---
+
+<BaseLayout title="Portada" description="Busca y descubre recetas en este prototipo de recetario familiar.">
+  <section class="hero">
+    <div class="hero-copy">
+      <h1>¿Qué hay de <em>comer?</em></h1>
+      <p class="hero-subtitle">Un recetario familiar de sabores de siempre y nuevos platos por descubrir. Un lugar donde guardar nuestras recetas para que no se queden en el recuerdo y podamos seguir preparándolas y compartiéndolas.</p>
+    </div>
+    <div class="hero-photo-wrap">
+      <img class="hero-photo" src={heroImage} alt="Retrato ilustrado de una mujer mayor con delantal azul claro" fetchpriority="high" />
+    </div>
+  </section>
+
+  <div id="recetas"><RecipeCollection recipes={recipes} heading="¿Qué cocino hoy?" /></div>
+
+  <section class="index-callout">
+    <div><p class="eyebrow">PARA ENCONTRARLO RÁPIDO</p><h2>El recetario,<br /><em>de la A a la Z.</em></h2></div>
+    <p>Un índice claro, ordenado en español y alimentado automáticamente desde las fichas de recetas.</p>
+    <a class="button button-outline" href={`${import.meta.env.BASE_URL.replace(/\/$/, '')}/indice/`}>Abrir el índice <span aria-hidden="true">↗</span></a>
+    <span class="callout-flower" aria-hidden="true">✳</span>
+  </section>
+</BaseLayout>

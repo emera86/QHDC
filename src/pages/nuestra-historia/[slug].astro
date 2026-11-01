@@ -1,0 +1,28 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+
+export function getStaticPaths() {
+  const pages = [
+    { slug: 'prologo-de-la-tia-chonin', title: 'Prólogo de la tía Chonín' },
+    { slug: 'la-abuela-bobel-la-fundadora', title: 'La abuela Bobel: la fundadora' },
+    { slug: 'nuestro-momento-de-fama', title: 'Nuestro momento de fama' },
+  ];
+  return pages.map((page) => ({ params: { slug: page.slug }, props: { page } }));
+}
+
+const { page } = Astro.props;
+---
+
+<BaseLayout title={page.title} description={`${page.title}: contenido original pendiente de recuperar de Blogger.`}>
+  <section class="page-intro pending-page">
+    <p class="eyebrow">NUESTRA HISTORIA</p>
+    <h1>{page.title}</h1>
+    <div class="pending-message" role="status">
+      <span class="pending-mark" aria-hidden="true">✳</span>
+      <div>
+        <h2>Contenido pendiente de incorporar</h2>
+        <p>El texto original de esta página se recuperará fielmente de la exportación de Blogger en una fase posterior.</p>
+      </div>
+    </div>
+  </section>
+</BaseLayout>

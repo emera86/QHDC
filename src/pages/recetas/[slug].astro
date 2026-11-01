@@ -1,0 +1,83 @@
+---
+import { getCollection, render } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { slugifyTag } from '../../data/taxonomy';
+
+export async function getStaticPaths() {
+  const recipes = await getCollection('recipes');
+  return recipes.map((recipe) => ({ params: { slug: recipe.id }, props: { recipe } }));
+}
+
+const { recipe } = Astro.props;
+const { Content } = await render(recipe);
+const { title, author, categories, tags, prepTime, cookTime, servings, difficulty } = recipe.data;
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+const images = recipe.data.images.map((image) => ({
+  ...image,
+  src: image.src.startsWith('/') ? `${base}${image.src}` : image.src,
+}));
+const galleryId = `gallery-${recipe.id.replace(/[^a-z0-9-]/gi, '-')}`;
+---
+
+<BaseLayout title={title} description={recipe.data.summary}>
+  <article class="recipe-page">
+    <a class="back-link no-print" href={`${base}/`}>← Volver al recetario</a>
+    <header class="recipe-header">
+      <div class="recipe-heading-copy">
+        <p class="eyebrow"><span class="eyebrow-dot"></span> RECETA DE MUESTRA · NO PROCEDE DE BLOGGER</p>
+        <div class="recipe-categories">{categories.map((category) => <span>{category}</span>)}</div>
+        <h1>{title}</h1>
+        {author && <p class="recipe-author">Compartida por <strong>{author}</strong></p>}
+        <p class="recipe-summary">{recipe.data.summary}</p>
+        <div class="recipe-actions no-print"><button class="button button-outline" onclick="window.print()">Imprimir receta <span aria-hidden="true">⎙</span></button></div>
+      </div>
+      {images.length > 0 && <div class="recipe-gallery" id={galleryId} data-gallery>
+        <img class="gallery-image" src={images[0].src} alt={images[0].alt} fetchpriority="high" />
+        {images.length > 1 && <>
+          <button class="gallery-arrow gallery-prev" type="button" aria-label="Fotografía anterior">←</button>
+          <button class="gallery-arrow gallery-next" type="button" aria-label="Fotografía siguiente">→</button>
+          <div class="gallery-counter" aria-live="polite">1 / {images.length}</div>
+          <div class="gallery-dots" role="group" aria-label="Elegir fotografía">{images.map((image, index) => <button class:list={['gallery-dot', { active: index === 0 }]} type="button" data-gallery-dot={index} aria-label={`Mostrar fotografía ${index + 1}`} aria-pressed={index === 0}></button>)}</div>
+        </>}
+      </div>}
+    </header>
+
+    <div class="recipe-meta" aria-label="Datos de la receta">
+      {prepTime && <div><span class="meta-icon" aria-hidden="true">◷</span><span><small>Preparación</small><strong>{prepTime}</strong></span></div>}
+      {cookTime && <div><span class="meta-icon" aria-hidden="true">♨</span><span><small>Cocción</small><strong>{cookTime}</strong></span></div>}
+      {servings && <div><span class="meta-icon" aria-hidden="true">♧</span><span><small>Raciones</small><strong>{servings}</strong></span></div>}
+      {difficulty && <div><span class="meta-icon" aria-hidden="true">✳</span><span><small>Dificultad</small><strong>{difficulty}</strong></span></div>}
+    </div>
+
+    <div class="recipe-content-wrap">
+      <div class="recipe-content"><Content /></div>
+      <aside class="recipe-aside">
+        <div class="aside-card"><p class="eyebrow">EN ESTA RECETA</p><p>Un ejemplo de ficha creada desde un archivo Markdown independiente.</p><div class="aside-categories">{categories.map((category) => <span>{category}</span>)}</div>{tags.length > 0 && <div class="tag-list" aria-label="Etiquetas temáticas">{tags.map((tag) => <a href={`${base}/etiquetas/${slugifyTag(tag)}/`}>#{tag}</a>)}</div>}</div>
+        <div class="aside-note"><span aria-hidden="true">✳</span><p>Los datos y las recetas de este prototipo son ficticios y no se han migrado desde Blogger.</p></div>
+      </aside>
+    </div>
+  </article>
+</BaseLayout>
+
+{images.length > 1 && <script define:vars={{ galleryId, images }}>
+  const root = document.getElementById(galleryId);
+  if (root) {
+    const photo = root.querySelector('.gallery-image');
+    const counter = root.querySelector('.gallery-counter');
+    const dots = [...root.querySelectorAll('[data-gallery-dot]')];
+    let current = 0;
+    const show = (index) => {
+      current = (index + images.length) % images.length;
+      photo.src = images[current].src;
+      photo.alt = images[current].alt;
+      counter.textContent = `${current + 1} / ${images.length}`;
+      dots.forEach((dot, dotIndex) => {
+        dot.classList.toggle('active', dotIndex === current);
+        dot.setAttribute('aria-pressed', String(dotIndex === current));
+      });
+    };
+    root.querySelector('.gallery-prev')?.addEventListener('click', () => show(current - 1));
+    root.querySelector('.gallery-next')?.addEventListener('click', () => show(current + 1));
+    dots.forEach((dot, index) => dot.addEventListener('click', () => show(index)));
+  }
+</script>}

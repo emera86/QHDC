@@ -1,0 +1,125 @@
+---
+import '../styles/global.css';
+import { RECIPE_CATEGORIES } from '../data/taxonomy';
+
+interface Props {
+  title: string;
+  description?: string;
+}
+
+const { title, description = 'Un recetario familiar de muestra, sencillo y hecho para compartir.' } = Astro.props;
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+const home = `${base}/`;
+const index = `${base}/indice/`;
+const categoryLinks = RECIPE_CATEGORIES.map((category) => ({
+  label: category,
+  href: `${index}?categoria=${encodeURIComponent(category)}`,
+}));
+const storyPages = [
+  { label: 'Prólogo de la tía Chonín', href: `${base}/nuestra-historia/prologo-de-la-tia-chonin/` },
+  { label: 'La abuela Bobel: la fundadora', href: `${base}/nuestra-historia/la-abuela-bobel-la-fundadora/` },
+  { label: 'Nuestro momento de fama', href: `${base}/nuestra-historia/nuestro-momento-de-fama/` },
+];
+---
+
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={description} />
+    <meta name="theme-color" content="#fffdf2" />
+    <title>{title} · ¿Qué hay de comer?</title>
+  </head>
+  <body>
+    <a class="skip-link" href="#contenido">Saltar al contenido</a>
+    <header class="site-header">
+      <a class="brand" href={home} aria-label="¿Qué hay de comer?, portada">
+        <span class="brand-mark" aria-hidden="true">✳</span>
+        <span><strong>¿Qué hay de comer?</strong><small>El rincón de recetas familiares</small></span>
+      </a>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="primary-navigation">
+        <span class="nav-toggle-icon" aria-hidden="true"><span></span><span></span></span>
+        <span class="nav-toggle-label">Menú</span>
+      </button>
+      <nav class="primary-nav" id="primary-navigation" aria-label="Navegación principal">
+        <a href={home} aria-current={Astro.url.pathname === home ? 'page' : undefined}>Portada</a>
+        <div class="index-nav-item">
+          <a href={index} aria-current={Astro.url.pathname === index ? 'page' : undefined}>Índice de recetas</a>
+          <details class="category-menu">
+            <summary><span class="sr-only">Mostrar categorías</span></summary>
+            <ul class="category-submenu">
+              {categoryLinks.map((category) => <li><a href={category.href}>{category.label}</a></li>)}
+            </ul>
+          </details>
+        </div>
+        <details class="blog-menu">
+          <summary>Nuestra historia</summary>
+          <ul class="blog-submenu">
+            {storyPages.map((page) => <li><a href={page.href}>{page.label}</a></li>)}
+          </ul>
+        </details>
+      </nav>
+    </header>
+    <main id="contenido"><slot /></main>
+    <footer class="site-footer">
+      <a class="brand brand-small" href={home}><span class="brand-mark" aria-hidden="true">✳</span><span><strong>¿Qué hay de comer?</strong><small>Un prototipo con recetas ficticias</small></span></a>
+      <p>Recetas y fotografías de muestra, guardadas en este proyecto y ajenas a la exportación de Blogger.</p>
+    </footer>
+  </body>
+</html>
+
+<script>
+  const header = document.querySelector<HTMLElement>('.site-header');
+  const menuToggle = header?.querySelector<HTMLButtonElement>('.nav-toggle');
+  const primaryNavigation = header?.querySelector<HTMLElement>('.primary-nav');
+  const blogMenu = header?.querySelector<HTMLDetailsElement>('.blog-menu');
+  const categoryMenu = header?.querySelector<HTMLDetailsElement>('.category-menu');
+
+  function closeNavigation() {
+    if (!header || !menuToggle || !primaryNavigation) return;
+    header.classList.remove('nav-open');
+    menuToggle.setAttribute('aria-expanded', 'false');
+    menuToggle.setAttribute('aria-label', 'Abrir navegación');
+    if (blogMenu) blogMenu.open = false;
+    if (categoryMenu) categoryMenu.open = false;
+  }
+
+  menuToggle?.addEventListener('click', () => {
+    const isOpen = menuToggle.getAttribute('aria-expanded') === 'true';
+    if (!header || !primaryNavigation) return;
+    header.classList.toggle('nav-open', !isOpen);
+    menuToggle.setAttribute('aria-expanded', String(!isOpen));
+    menuToggle.setAttribute('aria-label', isOpen ? 'Abrir navegación' : 'Cerrar navegación');
+  });
+
+  header?.querySelectorAll<HTMLAnchorElement>('.primary-nav a').forEach((link) => {
+    link.addEventListener('click', () => closeNavigation());
+  });
+  header?.querySelector<HTMLAnchorElement>('.brand')?.addEventListener('click', () => closeNavigation());
+
+  document.addEventListener('click', (event) => {
+    if (blogMenu && !blogMenu.contains(event.target as Node)) blogMenu.open = false;
+    if (categoryMenu && !categoryMenu.contains(event.target as Node)) categoryMenu.open = false;
+    if (header && !header.contains(event.target as Node)) closeNavigation();
+  });
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key !== 'Escape' || !header) return;
+    if (categoryMenu?.open) {
+      categoryMenu.open = false;
+      categoryMenu.querySelector('summary')?.focus();
+    } else if (blogMenu?.open) {
+      blogMenu.open = false;
+      blogMenu.querySelector('summary')?.focus();
+    } else if (menuToggle?.getAttribute('aria-expanded') === 'true') {
+      closeNavigation();
+      menuToggle.focus();
+    }
+  });
+
+  const desktopNavigation = window.matchMedia('(min-width: 701px)');
+  desktopNavigation.addEventListener('change', (event) => {
+    if (event.matches) closeNavigation();
+  });
+</script>

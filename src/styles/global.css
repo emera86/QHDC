@@ -251,6 +251,7 @@ h1 em, h2 em { color: var(--orange); font-weight: 500; }
   .recipe-content-wrap { grid-template-columns: minmax(0, 1fr) 210px; gap: 2rem; }
 }
 @media (max-width: 700px) {
+  .card-copy .text-link { min-height: 44px; }
   .hero { grid-template-columns: 1fr; padding: 3rem 6% 1rem; }
   .hero-copy { padding: 0 0 2rem; }
   .hero h1 { font-size: clamp(3.3rem, 13vw, 5rem); }

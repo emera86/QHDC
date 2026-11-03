@@ -1,6 +1,7 @@
 ---
 import '../styles/global.css';
 import { RECIPE_CATEGORIES } from '../data/taxonomy';
+import { STORY_PAGES } from '../data/storyPages';
 
 interface Props {
   title: string;
@@ -15,11 +16,11 @@ const categoryLinks = RECIPE_CATEGORIES.map((category) => ({
   label: category,
   href: `${index}?categoria=${encodeURIComponent(category)}`,
 }));
-const storyPages = [
-  { label: 'Prólogo de la tía Chonín', href: `${base}/nuestra-historia/prologo-de-la-tia-chonin/` },
-  { label: 'La abuela Bobel: la fundadora', href: `${base}/nuestra-historia/la-abuela-bobel-la-fundadora/` },
-  { label: 'Nuestro momento de fama', href: `${base}/nuestra-historia/nuestro-momento-de-fama/` },
-];
+const storyPageLinks = STORY_PAGES.map((page) => ({
+  label: page.title,
+  href: `${base}/nuestra-historia/${page.slug}/`,
+}));
+const storyIndex = `${base}/nuestra-historia/`;
 ---
 
 <!doctype html>
@@ -35,7 +36,7 @@ const storyPages = [
     <a class="skip-link" href="#contenido">Saltar al contenido</a>
     <header class="site-header">
       <a class="brand" href={home} aria-label="¿Qué hay de comer?, portada">
-        <span class="brand-mark" aria-hidden="true">✳</span>
+        <span class="brand-mark" aria-hidden="true">&#x2733;&#xFE0E;</span>
         <span><strong>¿Qué hay de comer?</strong><small>El rincón de recetas familiares</small></span>
       </a>
       <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="primary-navigation">
@@ -53,17 +54,20 @@ const storyPages = [
             </ul>
           </details>
         </div>
-        <details class="blog-menu">
-          <summary>Nuestra historia</summary>
-          <ul class="blog-submenu">
-            {storyPages.map((page) => <li><a href={page.href}>{page.label}</a></li>)}
-          </ul>
-        </details>
+        <div class="story-nav-item">
+          <a href={storyIndex} aria-current={Astro.url.pathname === storyIndex ? 'page' : undefined}>Nuestra historia</a>
+          <details class="story-menu">
+            <summary><span class="sr-only">Mostrar subartículos de Nuestra historia</span></summary>
+            <ul class="story-submenu">
+              {storyPageLinks.map((page) => <li><a href={page.href}>{page.label}</a></li>)}
+            </ul>
+          </details>
+        </div>
       </nav>
     </header>
     <main id="contenido"><slot /></main>
     <footer class="site-footer">
-      <a class="brand brand-small" href={home}><span class="brand-mark" aria-hidden="true">✳</span><span><strong>¿Qué hay de comer?</strong><small>Un prototipo con recetas ficticias</small></span></a>
+      <a class="brand brand-small" href={home}><span class="brand-mark" aria-hidden="true">&#x2733;&#xFE0E;</span><span><strong>¿Qué hay de comer?</strong><small>Un prototipo con recetas ficticias</small></span></a>
       <p>Recetas y fotografías de muestra, guardadas en este proyecto y ajenas a la exportación de Blogger.</p>
     </footer>
   </body>
@@ -73,7 +77,7 @@ const storyPages = [
   const header = document.querySelector<HTMLElement>('.site-header');
   const menuToggle = header?.querySelector<HTMLButtonElement>('.nav-toggle');
   const primaryNavigation = header?.querySelector<HTMLElement>('.primary-nav');
-  const blogMenu = header?.querySelector<HTMLDetailsElement>('.blog-menu');
+  const storyMenu = header?.querySelector<HTMLDetailsElement>('.story-menu');
   const categoryMenu = header?.querySelector<HTMLDetailsElement>('.category-menu');
 
   function closeNavigation() {
@@ -81,7 +85,7 @@ const storyPages = [
     header.classList.remove('nav-open');
     menuToggle.setAttribute('aria-expanded', 'false');
     menuToggle.setAttribute('aria-label', 'Abrir navegación');
-    if (blogMenu) blogMenu.open = false;
+    if (storyMenu) storyMenu.open = false;
     if (categoryMenu) categoryMenu.open = false;
   }
 
@@ -99,7 +103,7 @@ const storyPages = [
   header?.querySelector<HTMLAnchorElement>('.brand')?.addEventListener('click', () => closeNavigation());
 
   document.addEventListener('click', (event) => {
-    if (blogMenu && !blogMenu.contains(event.target as Node)) blogMenu.open = false;
+    if (storyMenu && !storyMenu.contains(event.target as Node)) storyMenu.open = false;
     if (categoryMenu && !categoryMenu.contains(event.target as Node)) categoryMenu.open = false;
     if (header && !header.contains(event.target as Node)) closeNavigation();
   });
@@ -109,17 +113,46 @@ const storyPages = [
     if (categoryMenu?.open) {
       categoryMenu.open = false;
       categoryMenu.querySelector('summary')?.focus();
-    } else if (blogMenu?.open) {
-      blogMenu.open = false;
-      blogMenu.querySelector('summary')?.focus();
+    } else if (storyMenu?.open) {
+      storyMenu.open = false;
+      storyMenu.querySelector('summary')?.focus();
     } else if (menuToggle?.getAttribute('aria-expanded') === 'true') {
       closeNavigation();
       menuToggle.focus();
     }
   });
 
-  const desktopNavigation = window.matchMedia('(min-width: 701px)');
-  desktopNavigation.addEventListener('change', (event) => {
-    if (event.matches) closeNavigation();
-  });
+  const compactNavigation = window.matchMedia('(max-width: 700px)');
+  const responsiveText = [
+    header?.querySelector<HTMLElement>('.brand small'),
+    header?.querySelector<HTMLElement>('.index-nav-item > a'),
+    header?.querySelector<HTMLElement>('.story-nav-item > a'),
+  ].filter((element): element is HTMLElement => element !== null && element !== undefined);
+
+  function textWraps(element: HTMLElement) {
+    const range = document.createRange();
+    range.selectNodeContents(element);
+    return range.getClientRects().length > 1 || element.scrollWidth > element.clientWidth + 1;
+  }
+
+  function updateResponsiveNavigation() {
+    if (!header) return;
+    const wasCompact = header.classList.contains('nav-compact');
+    if (wasCompact && !compactNavigation.matches) header.classList.remove('nav-compact');
+
+    const shouldBeCompact = compactNavigation.matches || responsiveText.some(textWraps);
+    header.classList.toggle('nav-compact', shouldBeCompact);
+    if (wasCompact !== shouldBeCompact) closeNavigation();
+  }
+
+  let responsiveFrame = 0;
+  function scheduleResponsiveNavigation() {
+    cancelAnimationFrame(responsiveFrame);
+    responsiveFrame = requestAnimationFrame(updateResponsiveNavigation);
+  }
+
+  window.addEventListener('resize', scheduleResponsiveNavigation);
+  compactNavigation.addEventListener('change', scheduleResponsiveNavigation);
+  document.fonts?.ready.then(scheduleResponsiveNavigation);
+  scheduleResponsiveNavigation();
 </script>

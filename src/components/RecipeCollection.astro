@@ -6,9 +6,10 @@ import RecipeCard from './RecipeCard.astro';
 interface Props {
   recipes: CollectionEntry<'recipes'>[];
   heading: string;
+  authorPrefix?: string;
 }
 
-const { recipes, heading } = Astro.props;
+const { recipes, heading, authorPrefix = 'De' } = Astro.props;
 const categories = RECIPE_CATEGORIES;
 const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 ---
@@ -24,7 +25,7 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
     <span class="result-count" id="result-count" aria-live="polite">{recipes.length} recetas de muestra</span>
   </div>
   <div class="recipe-grid" id="recipe-grid">
-    {recipes.map((recipe) => <RecipeCard recipe={recipe} />)}
+    {recipes.map((recipe) => <RecipeCard recipe={recipe} authorPrefix={authorPrefix} />)}
   </div>
   <p class="empty-state" id="empty-state" hidden>No encontramos recetas con esos criterios. Prueba otra búsqueda.</p>
 </section>

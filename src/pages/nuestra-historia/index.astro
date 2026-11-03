@@ -1,0 +1,24 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { STORY_PAGES } from '../../data/storyPages';
+
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+---
+
+<BaseLayout title="Nuestra historia" description="Sección de historia del recetario familiar; contenido pendiente de recuperar de Blogger.">
+  <section class="page-intro pending-page">
+    <p class="eyebrow">EL RECETARIO FAMILIAR</p>
+    <h1>Nuestra historia</h1>
+    <div class="pending-message" role="status">
+      <span class="pending-mark" aria-hidden="true">&#x2733;&#xFE0E;</span>
+      <div>
+        <h2>Contenido pendiente de recuperar</h2>
+        <p>El contenido original de esta sección se recuperará fielmente de Blogger.</p>
+      </div>
+    </div>
+    <h2 class="story-index-heading">Artículos</h2>
+    <ul class="story-index-list">
+      {STORY_PAGES.map((page) => <li><a href={`${base}/nuestra-historia/${page.slug}/`}>{page.title}</a></li>)}
+    </ul>
+  </section>
+</BaseLayout>

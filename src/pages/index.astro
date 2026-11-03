@@ -19,12 +19,12 @@ const heroImage = `${base}/images/portada/${encodeURIComponent('Imagen abuela po
     </div>
   </section>
 
-  <div id="recetas"><RecipeCollection recipes={recipes} heading="¿Qué cocino hoy?" /></div>
+  <div id="recetas"><RecipeCollection recipes={recipes} heading="¿Qué cocino hoy?" authorPrefix="Por" /></div>
 
   <section class="index-callout">
     <div><p class="eyebrow">PARA ENCONTRARLO RÁPIDO</p><h2>El recetario,<br /><em>de la A a la Z.</em></h2></div>
     <p>Un índice claro, ordenado en español y alimentado automáticamente desde las fichas de recetas.</p>
     <a class="button button-outline" href={`${import.meta.env.BASE_URL.replace(/\/$/, '')}/indice/`}>Abrir el índice <span aria-hidden="true">↗</span></a>
-    <span class="callout-flower" aria-hidden="true">✳</span>
+    <span class="callout-flower" aria-hidden="true">&#x2733;&#xFE0E;</span>
   </section>
 </BaseLayout>

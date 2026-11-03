@@ -2,13 +2,17 @@
 import { getCollection, render } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { slugifyTag } from '../../data/taxonomy';
+import { findSimilarRecipes } from '../../data/relatedRecipes';
 
 export async function getStaticPaths() {
   const recipes = await getCollection('recipes');
-  return recipes.map((recipe) => ({ params: { slug: recipe.id }, props: { recipe } }));
+  return recipes.map((recipe) => ({
+    params: { slug: recipe.id },
+    props: { recipe, similarRecipes: findSimilarRecipes(recipe, recipes) },
+  }));
 }
 
-const { recipe } = Astro.props;
+const { recipe, similarRecipes } = Astro.props;
 const { Content } = await render(recipe);
 const { title, author, categories, tags, prepTime, cookTime, servings, difficulty } = recipe.data;
 const base = import.meta.env.BASE_URL.replace(/\/$/, '');
@@ -43,17 +47,28 @@ const galleryId = `gallery-${recipe.id.replace(/[^a-z0-9-]/gi, '-')}`;
     </header>
 
     <div class="recipe-meta" aria-label="Datos de la receta">
-      {prepTime && <div><span class="meta-icon" aria-hidden="true">◷</span><span><small>Preparación</small><strong>{prepTime}</strong></span></div>}
-      {cookTime && <div><span class="meta-icon" aria-hidden="true">♨</span><span><small>Cocción</small><strong>{cookTime}</strong></span></div>}
-      {servings && <div><span class="meta-icon" aria-hidden="true">♧</span><span><small>Raciones</small><strong>{servings}</strong></span></div>}
-      {difficulty && <div><span class="meta-icon" aria-hidden="true">✳</span><span><small>Dificultad</small><strong>{difficulty}</strong></span></div>}
+      {prepTime && <div><span class="meta-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><circle cx="12" cy="12" r="8.25" /><path d="M12 7v5l3.25 2" /></svg></span><span><small>Preparación</small><strong>{prepTime}</strong></span></div>}
+      {cookTime && <div><span class="meta-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M6 10h12l-1 9H7l-1-9Z" /><path d="M4 10h16M9 7c0-1 1-1 1-2M13 7c0-1 1-1 1-2" /></svg></span><span><small>Cocción</small><strong>{cookTime}</strong></span></div>}
+      {servings && <div><span class="meta-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><circle cx="9" cy="8" r="3" /><path d="M3.5 19v-1a5.5 5.5 0 0 1 11 0v1z" /><circle cx="17" cy="9" r="2.25" /><path d="M16.2 14.5a4.3 4.3 0 0 1 4.3 4.3v.2h-4" /></svg></span><span><small>Raciones</small><strong>{servings}</strong></span></div>}
+      {difficulty && <div><span class="meta-icon meta-icon-star" aria-hidden="true">&#x2733;&#xFE0E;</span><span><small>Dificultad</small><strong>{difficulty}</strong></span></div>}
     </div>
 
     <div class="recipe-content-wrap">
       <div class="recipe-content"><Content /></div>
       <aside class="recipe-aside">
-        <div class="aside-card"><p class="eyebrow">EN ESTA RECETA</p><p>Un ejemplo de ficha creada desde un archivo Markdown independiente.</p><div class="aside-categories">{categories.map((category) => <span>{category}</span>)}</div>{tags.length > 0 && <div class="tag-list" aria-label="Etiquetas temáticas">{tags.map((tag) => <a href={`${base}/etiquetas/${slugifyTag(tag)}/`}>#{tag}</a>)}</div>}</div>
-        <div class="aside-note"><span aria-hidden="true">✳</span><p>Los datos y las recetas de este prototipo son ficticios y no se han migrado desde Blogger.</p></div>
+        {similarRecipes.length > 0 && <section class="related-recipes" aria-labelledby="related-recipes-heading">
+          <p class="eyebrow">PARA SEGUIR EXPLORANDO</p>
+          <h2 id="related-recipes-heading">Recetas similares</h2>
+          <ul>{similarRecipes.map((similarRecipe) => <li>
+            <a class="related-recipe-link" href={`${base}/recetas/${similarRecipe.id}/`}>{similarRecipe.data.title}</a>
+            {similarRecipe.data.author && <span class="related-recipe-author">Por {similarRecipe.data.author}</span>}
+          </li>)}</ul>
+        </section>}
+        {tags.length > 0 && <section class="aside-card recipe-tags" aria-labelledby="recipe-tags-heading">
+          <p class="eyebrow" id="recipe-tags-heading">ETIQUETAS TEMÁTICAS</p>
+          <div class="tag-list" aria-label="Etiquetas temáticas">{tags.map((tag) => <a href={`${base}/etiquetas/${slugifyTag(tag)}/`}>#{tag}</a>)}</div>
+        </section>}
+        <div class="aside-note"><span aria-hidden="true">&#x2733;&#xFE0E;</span><p>Los datos y las recetas de este prototipo son ficticios y no se han migrado desde Blogger.</p></div>
       </aside>
     </div>
   </article>

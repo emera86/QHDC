@@ -10,8 +10,8 @@ cookTime: 50 min
 servings: 6 personas
 difficulty: Muy fácil
 images:
-  - src: /images/demo/guiso.jpg
-    alt: Cuenco de comida casera de ejemplo
+  - src: /images/demo/plato-vegetal.jpg
+    alt: Plato vegetal de ejemplo
 demo: true
 ---
 
